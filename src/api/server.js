@@ -2,11 +2,11 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const nodehun = require("nodehun");
-
+const cors = require("cors");
 const app = express();
 const port = 3000;
-
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
+app.use(express.json());
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 
@@ -15,8 +15,27 @@ const dictionary = fs.readFileSync("./mn_MN.dic");
 const hunspell = new nodehun(affix, dictionary);
 
 const stopWords = new Set([
-  "буюу", "энэ", "тэр", "бол", "өөр", "байна", "болох", "гэх мэт", 
-  "гэж", "мөн", "р", "нд", "л", "ч", "нийг", "ныг", "наас", "ыг", "ийн", "ын", "ний"
+  "буюу",
+  "энэ",
+  "тэр",
+  "бол",
+  "өөр",
+  "байна",
+  "болох",
+  "гэх мэт",
+  "гэж",
+  "мөн",
+  "р",
+  "нд",
+  "л",
+  "ч",
+  "нийг",
+  "ныг",
+  "наас",
+  "ыг",
+  "ийн",
+  "ын",
+  "ний",
 ]);
 
 const cleanText = (text) => text.replace(/[^а-өүяА-ӨҮЯ\s]/g, "");
@@ -27,7 +46,7 @@ const limitTextTo300Words = (text) => {
 };
 
 const removeStopWords = (words) => {
-  return words.filter(word => !stopWords.has(word));
+  return words.filter((word) => !stopWords.has(word));
 };
 
 const checkSpellingWithSuggestions = (words) => {
@@ -61,10 +80,20 @@ const checkSpellingWithSuggestions = (words) => {
       } else {
         misspelledWords.push(word);
         suggestions[word] = hunspell.suggestSync(word);
-        analyzedWords.push({ word, rootWord: word, suffixes: [], isCorrect: false });
+        analyzedWords.push({
+          word,
+          rootWord: word,
+          suffixes: [],
+          isCorrect: false,
+        });
       }
     } else {
-      analyzedWords.push({ word, rootWord: word, suffixes: [], isCorrect: true });
+      analyzedWords.push({
+        word,
+        rootWord: word,
+        suffixes: [],
+        isCorrect: true,
+      });
     }
   });
 
@@ -89,7 +118,8 @@ const categorizeContent = (text) => {
   let contentType = "Unknown";
   for (const [category, keywords] of Object.entries(contentCategories)) {
     if (keywords.some((keyword) => text.includes(keyword))) {
-      contentType = category.charAt(0).toUpperCase() + category.slice(1) + " News";
+      contentType =
+        category.charAt(0).toUpperCase() + category.slice(1) + " News";
       break;
     }
   }
@@ -100,28 +130,37 @@ app.get("/", (req, res) => {
   res.render("index", { results: null, text: "" });
 });
 
-app.post("/process", (req, res) => {
-  const text = req.body.text;
+app.post("/check", (req, res) => {
+  try {
+    const text = req.body.text;
+    if (!text) {
+      return res.status(400).json({ error: "Text is required." });
+    }
 
-  const limitedText = limitTextTo300Words(text);
-  const cleanedText = cleanText(limitedText);
-  const words = cleanedText.split(/\s+/).map((word) => word.toLowerCase());
-  const filteredWords = removeStopWords(words);
+    const limitedText = limitTextTo300Words(text);
+    const cleanedText = cleanText(limitedText);
+    const words = cleanedText.split(/\s+/).map((word) => word.toLowerCase());
+    const filteredWords = removeStopWords(words);
 
-  const { misspelledWords, suggestions, analyzedWords } = checkSpellingWithSuggestions(filteredWords);
+    const { misspelledWords, suggestions, analyzedWords } =
+      checkSpellingWithSuggestions(filteredWords);
 
-  const frequency = calculateWordFrequency(filteredWords);
-  const mostFrequentWords = Object.keys(frequency)
-    .sort((a, b) => frequency[b] - frequency[a])
-    .slice(0, 10)
-    .map((word) => ({ word, count: frequency[word] }));
+    console.log("Misspelled Words:", misspelledWords); // Log to check the output
+    console.log("Suggestions:", suggestions);
 
-  const nonMongolianWordsCount = filteredWords.filter((word) => /^[a-zA-Z]+$/.test(word)).length;
+    const frequency = calculateWordFrequency(filteredWords);
+    const mostFrequentWords = Object.keys(frequency)
+      .sort((a, b) => frequency[b] - frequency[a])
+      .slice(0, 10)
+      .map((word) => ({ word, count: frequency[word] }));
 
-  const contentType = categorizeContent(cleanedText);
+    const nonMongolianWordsCount = filteredWords.filter((word) =>
+      /^[a-zA-Z]+$/.test(word)
+    ).length;
 
-  res.render("index", {
-    results: {
+    const contentType = categorizeContent(cleanedText);
+
+    res.json({
       misspelledWords,
       suggestions,
       rootWordCount: filteredWords.length,
@@ -129,9 +168,11 @@ app.post("/process", (req, res) => {
       nonMongolianWordsCount,
       contentType,
       analyzedWords,
-    },
-    text: text,
-  });
+    });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 app.listen(port, () => {
