@@ -1,9 +1,9 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const fs = require("fs");
 const nodehun = require("nodehun");
 
 const app = express();
+const { spawn } = require("child_process");
 const port = 3000;
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -20,7 +20,19 @@ const stopWords = new Set([
 ]);
 
 const cleanText = (text) => text.replace(/[^а-өүяА-ӨҮЯ\s]/g, "");
+const classifyText = (text) => {
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn("python3", ["predict.py", text]);
 
+    pythonProcess.stdout.on("data", (data) => {
+      resolve(data.toString().trim());
+    });
+
+    pythonProcess.stderr.on("data", (error) => {
+      reject(error.toString());
+    });
+  });
+};
 const limitTextTo300Words = (text) => {
   const words = text.split(/\s+/);
   return words.slice(0, 300).join(" ");
@@ -79,29 +91,16 @@ const calculateWordFrequency = (words) => {
   return frequency;
 };
 
-const categorizeContent = (text) => {
-  const contentCategories = {
-    economic: ["зах", "банк", "үнэт", "худалдаа", "экономи"],
-    sports: ["хөл", "тэмцээн", "баг", "спорт", "тоглогч", "тулаан"],
-    news: ["төр", "улс", "шийдвэр", "мэдээ", "соёл"],
-  };
-
-  let contentType = "Unknown";
-  for (const [category, keywords] of Object.entries(contentCategories)) {
-    if (keywords.some((keyword) => text.includes(keyword))) {
-      contentType = category.charAt(0).toUpperCase() + category.slice(1) + " News";
-      break;
-    }
-  }
-  return contentType;
-};
-
 app.get("/", (req, res) => {
   res.render("index", { results: null, text: "" });
 });
 
-app.post("/process", (req, res) => {
-  const text = req.body.text;
+app.post("/check", async (req, res) => {
+  try {
+    const text = req.body.text;
+    if (!text) {
+      return res.status(400).json({ error: "Text is required." });
+    }
 
   const limitedText = limitTextTo300Words(text);
   const cleanedText = cleanText(limitedText);
@@ -110,18 +109,17 @@ app.post("/process", (req, res) => {
 
   const { misspelledWords, suggestions, analyzedWords } = checkSpellingWithSuggestions(filteredWords);
 
-  const frequency = calculateWordFrequency(filteredWords);
-  const mostFrequentWords = Object.keys(frequency)
-    .sort((a, b) => frequency[b] - frequency[a])
-    .slice(0, 10)
-    .map((word) => ({ word, count: frequency[word] }));
-
-  const nonMongolianWordsCount = filteredWords.filter((word) => /^[a-zA-Z]+$/.test(word)).length;
+    const frequency = calculateWordFrequency(filteredWords);
+    const mostFrequentWords = Object.keys(frequency)
+      .sort((a, b) => frequency[b] - frequency[a])
+      .slice(0, 10)
+      .map((word) => ({ word, count: frequency[word] }));
 
   const contentType = categorizeContent(cleanedText);
 
-  res.render("index", {
-    results: {
+    const contentType = await classifyText(cleanedText);
+
+    res.json({
       misspelledWords,
       suggestions,
       rootWordCount: filteredWords.length,
@@ -129,9 +127,9 @@ app.post("/process", (req, res) => {
       nonMongolianWordsCount,
       contentType,
       analyzedWords,
-    },
+    }),
     text: text,
-  });
+  }
 });
 
 app.listen(port, () => {

@@ -103,24 +103,37 @@ const App = () => {
         <div className="flex-[0.8] bg-[#F2F7FA] rounded-2xl p-6 shadow-xl w-full border-2 border-[#2E8885] overflow-auto max-h-[500px]">
           <h2 className="text-lg font-bold mb-4">Алдаатай үгсийн жагсаалт</h2>
           {result ? (
-            result.misspelledWords && result.misspelledWords.length > 0 ? (
-              <ul className="space-y-2">
-                {result.misspelledWords.map((word, index) => (
+            <>
+              {result.misspelledWords && result.misspelledWords.length > 0 ? (
+                <ul className="space-y-2">
+                  {result.misspelledWords.map((word, index) => (
+                    <li key={index}>
+                      Үг: <strong>{word}</strong>
+                      {result.suggestions[word]?.length > 0 && (
+                        <span>
+                          {" "}
+                          - Зөв үг: {result.suggestions[word].join(", ")}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>Бүх үг зөв байна.</p>
+              )}
+
+              <h3 className="text-md font-bold mt-4">Ангилал:</h3>
+              <p className="text-gray-700">{result.contentType}</p>
+
+              <h3 className="text-md font-bold mt-4">Хамгийн түгээмэл үгс:</h3>
+              <ul className="list-disc list-inside">
+                {result.mostFrequentWords.map((word, index) => (
                   <li key={index}>
-                    Word: <strong>{word}</strong>
-                    {result.suggestions[word]?.length > 0 && (
-                      <span>
-                        {" "}
-                        - Possible suggestions:{" "}
-                        {result.suggestions[word].join(", ")}
-                      </span>
-                    )}
+                    {word.word}: {word.count}
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p>Бүх үг зөв байна.</p>
-            )
+            </>
           ) : (
             <p>Үр дүн байхгүй байна. Та текст оруулна уу.</p>
           )}
