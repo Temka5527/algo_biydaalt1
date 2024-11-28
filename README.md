@@ -3,6 +3,7 @@
 # B221910027 A.Bilguun
 # B221910040 N.Jawhlantugs
 # B221910038 H.Baasanjamts
+# B221910024 Ц.Болортуяа
 
 # Getting Started with Create React App
 
