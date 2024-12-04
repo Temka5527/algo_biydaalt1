@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 /src/api/news.csv
+/src/api/stemmed_news_mongolian.csv
 # testing
 /coverage
 

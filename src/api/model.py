@@ -1,30 +1,43 @@
-import json
+import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, accuracy_score
 import joblib
 
-with open("processed_data.json", "r", encoding="utf-8") as file:
-    data = json.load(file)
+file_path = 'stemmed_news_mongolian.csv'
+df = pd.read_csv(file_path)
 
+print("Dataset preview:")
+print(df.head())
 
-documents = [item['text'] for item in data]
+text_column = 'stemmed_text'
+label_column = ' label'
 
-categories = ["Урлаг соёл", "эрүүл мэнд", "хууль", "улс төр", "спорт", "технологи", "боловсрол", "байгал орчин"]
-num_docs = len(documents)
-labels = (categories * (num_docs // len(categories))) + categories[:num_docs % len(categories)]
+X_train, X_test, y_train, y_test = train_test_split(
+    df[text_column],
+    df[label_column],
+    test_size=0.2, 
+    stratify=df[label_column],
+    random_state=42
+)
 
-vectorizer = TfidfVectorizer(max_features=1000, stop_words=None)
-X = vectorizer.fit_transform(documents)
+vectorizer = TfidfVectorizer(max_features=1000)
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
 
-X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=0.2, random_state=42)
+clf = LogisticRegression(random_state=42)
+clf.fit(X_train_tfidf, y_train)
 
-clf = RandomForestClassifier(n_estimators=50,max_depth=10, min_samples_split=5, min_samples_leaf=2, random_state=42)
-clf.fit(X_train, y_train)
+y_pred = clf.predict(X_test_tfidf)
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
+print("Accuracy:", accuracy_score(y_test, y_pred))
 
-y_pred = clf.predict(X_test)
-print(classification_report(y_test, y_pred,zero_division=1))
+vectorizer_path = 'vectorizer.pkl'
+clf_path = 'classifier.pkl'
+joblib.dump(vectorizer, vectorizer_path)
+joblib.dump(clf, clf_path)
 
-joblib.dump(clf, "classifier.pkl")
-joblib.dump(vectorizer, "vectorizer.pkl")
+print(f"Vectorizer saved to: {vectorizer_path}")
+print(f"Classifier saved to: {clf_path}")
