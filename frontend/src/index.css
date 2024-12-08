@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+.misspelled {
+  text-decoration: underline dotted red;
+  position: relative;
+  cursor: help;
+}
+
+.misspelled:hover::after {
+  content: attr(data-suggestion);
+  position: absolute;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  top: -30px; /* adjust as needed */
+  left: 0;
+  z-index: 9999;
+}
