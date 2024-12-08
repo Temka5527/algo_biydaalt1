@@ -99,7 +99,7 @@ const App = () => {
         content: tooltipContent,
         arrow: true,
         theme: "light",
-        placement: "top", // Adjust placement if needed
+        placement: "top",
       });
     });
   }, [result, misspelledWords]);
