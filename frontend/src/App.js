@@ -169,11 +169,18 @@ const App = () => {
                 Тэмдэгтийн тоо: {characterCount}
               </p>
               {result && result.classificationResult && (
-                <div className="mt-2">
-                  <span className="text-sm md:text-base font-medium">
-                    Ангилал: {result.classificationResult}
-                  </span>
-                </div>
+                <>
+                  <div className="mt-2">
+                    <span className="text-sm md:text-base font-medium">
+                      Ангилал: {result.classificationResult}
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-sm md:text-base font-medium">
+                      Хугацаа: {result.executionTimeSeconds}
+                    </span>
+                  </div>
+                </>
               )}
             </div>
             <div className="flex space-x-4">

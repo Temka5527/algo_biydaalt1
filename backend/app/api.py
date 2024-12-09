@@ -11,6 +11,7 @@ import joblib
 import time
 from fastapi.responses import JSONResponse
 
+
 word_pattern = re.compile(r"\w+")
 
 
@@ -51,7 +52,7 @@ def batch(iterable, n):
         yield chunk
 
 
-async def batch_spell_check(words, batch_size=50):
+async def batch_spell_check(words, batch_size=70):
     misspelled = []
     suggestions = {}
 
@@ -72,26 +73,35 @@ async def classify_text(text):
 async def check_spelling(payload: TextPayload):
     start_time = time.time()
     text = payload.text
-    words = word_pattern.findall(text)
+    words = [word for word in word_pattern.findall(text) if len(word) > 2]
     counter = Counter(words)
     most_frequent = counter.most_common(5)
     most_frequent_words = [{"word": w, "count": c} for w, c in most_frequent]
 
+    task_start_time = time.time()
     misspelled_task = asyncio.create_task(batch_spell_check(words))
     classification_task = asyncio.create_task(classify_text(text))
 
     misspelled, suggestions = await misspelled_task
+    misspelled_time = time.time() - task_start_time
+
+    classification_start_time = time.time()
     prediction = await classification_task
+    classification_time = time.time() - classification_start_time
 
     end_time = time.time()
-    execution_time = end_time - start_time
+    total_execution_time = end_time - start_time
 
     response = {
         "misspelledWords": misspelled,
         "suggestions": suggestions,
         "mostFrequentWords": most_frequent_words,
         "classificationResult": prediction,
-        "executionTimeSeconds": execution_time,
+        "executionTimeSeconds": total_execution_time,
+        "timing": {
+            "spellCheckTime": misspelled_time,
+            "classificationTime": classification_time,
+        },
     }
 
     return JSONResponse(content=response)
