@@ -161,6 +161,7 @@ const App = () => {
               aria-label="Текст оруулах талбар"
             />
           </div>
+
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mt-4 gap-4 w-full">
             <div>
               <p className="text-sm md:text-base">Үгийн тоо: {wordCount}</p>
@@ -236,6 +237,36 @@ const App = () => {
               )}
             </button>
           </div>
+          {misspelledWords.length > 0 && (
+            <div className="bg-gray-100 rounded-lg p-4 mt-4">
+              <h2 className="text-lg font-semibold mb-4">Алдаатай үгс:</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...new Set(misspelledWords)].map((word, index) => (
+                  <div
+                    key={index}
+                    className="bg-white border rounded-lg p-3 shadow-sm"
+                  >
+                    <span className="text-red-600 font-semibold block mb-2">
+                      {word}
+                    </span>
+                    {result.suggestions[word] &&
+                      result.suggestions[word].length > 0 && (
+                        <div>
+                          <p className="text-gray-700 mb-1">
+                            Санал болгох үгс:
+                          </p>
+                          <ul className="list-disc list-inside text-sm pl-4 text-blue-600">
+                            {result.suggestions[word].map((suggestion, i) => (
+                              <li key={i}>{suggestion}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -248,7 +279,7 @@ const App = () => {
       <footer className="bg-[#2E8885] shadow-xl py-8 px-8 md:px-60 flex flex-col justify-center items-center text-white text-center space-y-4">
         <div>
           <p className="font-semibold">Мөрөөдлийн багийн гишүүд:</p>
-          <p>Төгөлдөр, Билгүүн, Тэмүүлэн, Баасанжамц, Жавхлантөгс</p>
+          <p>Төгөлдөр, Билгүүн, Тэмүүлэн, Баасанжамц, Жавхлантөгс, Болортуяа</p>
         </div>
       </footer>
     </div>
